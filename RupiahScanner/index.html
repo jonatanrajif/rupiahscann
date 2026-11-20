@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Deteksi Rupiah</title>
+    <!-- Favicon menggunakan emoji uang -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 min-h-screen flex flex-col font-sans text-slate-800">
+    <header class="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-5 shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <i class="fa-solid fa-coins text-2xl"></i>
+          <h1 class="text-2xl font-extrabold tracking-wide drop-shadow-md">RupiahScanner</h1>
+        </div>
+        <div class="flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/30">
+          <div id="serverStatusDot" class="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
+          <span id="serverStatus" class="text-sm font-medium tracking-wide">Menghubungkan...</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto p-6 flex flex-col gap-6 mt-4 mb-10">
+      <!-- Panduan Deteksi -->
+      <div class="bg-blue-50/50 border border-blue-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-center gap-6 mb-2">
+        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-inner">
+          <i class="fa-solid fa-lightbulb text-3xl"></i>
+        </div>
+        <div class="flex-1 w-full text-center md:text-left">
+          <h3 class="text-lg font-extrabold text-slate-700 mb-3 tracking-wide">💡 Panduan Deteksi Akurat</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white/80 p-4 rounded-2xl border border-white shadow-sm flex flex-col md:flex-row items-center md:items-start gap-3">
+              <i class="fa-solid fa-crosshairs text-blue-500 text-xl mt-1"></i>
+              <div>
+                <p class="font-bold text-slate-700 text-sm mb-1">Posisi di Tengah</p>
+                <p class="text-xs text-slate-500">Pastikan seluruh bagian uang terlihat utuh dan diletakkan tepat di tengah frame.</p>
+              </div>
+            </div>
+            <div class="bg-white/80 p-4 rounded-2xl border border-white shadow-sm flex flex-col md:flex-row items-center md:items-start gap-3">
+              <i class="fa-solid fa-sun text-amber-500 text-xl mt-1"></i>
+              <div>
+                <p class="font-bold text-slate-700 text-sm mb-1">Pencahayaan Baik</p>
+                <p class="text-xs text-slate-500">Gunakan cahaya yang cukup. Hindari tempat gelap atau pantulan lampu yang menyilaukan.</p>
+              </div>
+            </div>
+            <div class="bg-white/80 p-4 rounded-2xl border border-white shadow-sm flex flex-col md:flex-row items-center md:items-start gap-3">
+              <i class="fa-solid fa-eye text-emerald-500 text-xl mt-1"></i>
+              <div>
+                <p class="font-bold text-slate-700 text-sm mb-1">Terlihat Jelas</p>
+                <p class="text-xs text-slate-500">Kamera harus fokus (tidak blur) dan pastikan tidak ada benda yang menutupi uang.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-8 items-stretch w-full">
+        <!-- Bagian kiri: Input Gambar -->
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 w-full lg:w-1/2 flex flex-col transition-all hover:shadow-2xl hover:shadow-slate-200/60 duration-300">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-camera-retro text-blue-600 text-xl"></i>
+              <h2 class="text-xl font-bold text-slate-700">Input Gambar</h2>
+            </div>
+
+            <select
+              id="cameraSelect"
+              class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none w-full sm:w-auto shadow-sm cursor-pointer transition-colors hover:bg-slate-100"
+            >
+              <option value="">Memuat kamera...</option>
+            </select>
+          </div>
+
+          <div id="displayArea" class="w-full aspect-video bg-slate-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-300 relative overflow-hidden mb-8 group">
+            <i id="placeholderIcon" class="fa-solid fa-image text-4xl text-slate-300 mb-3 group-hover:text-blue-400 transition-colors duration-300"></i>
+            <span id="placeholderText" class="text-slate-400 font-medium">Belum ada input gambar</span>
+          </div>
+
+          <div class="flex flex-wrap gap-4 mt-auto">
+            <button
+              id="startCamBtn"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 min-w-[140px]"
+            >
+              <i class="fa-solid fa-video"></i>
+              <span>Mulai Kamera</span>
+            </button>
+
+            <button
+              id="snapPhotoBtn"
+              class="hidden flex-1 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 min-w-[140px]"
+            >
+              <i class="fa-solid fa-camera"></i>
+              <span>Ambil Foto</span>
+            </button>
+
+            <button
+              id="uploadBtn"
+              class="flex-1 bg-white hover:bg-slate-50 text-slate-700 py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 border-2 border-slate-200 active:scale-95 flex items-center justify-center gap-2 min-w-[140px]"
+            >
+              <i class="fa-solid fa-upload text-blue-600"></i>
+              <span>Upload File</span>
+            </button>
+            <input type="file" id="fileInput" accept="image/*" class="hidden" />
+          </div>
+        </div>
+
+        <!-- Bagian kanan: Hasil Identifikasi -->
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 w-full lg:w-1/2 flex flex-col items-center justify-center text-center relative overflow-hidden">
+          <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
+
+          <h2 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8 bg-slate-100 px-4 py-1.5 rounded-full z-10">Hasil Identifikasi</h2>
+
+          <div id="statusIcon" class="text-6xl text-slate-300 mb-4 z-10 transition-all duration-500">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+
+          <div id="statusTeks" class="text-5xl font-black text-slate-800 mb-3 tracking-tight z-10 transition-colors duration-300">SIAP</div>
+          <p id="subTeks" class="text-slate-500 mb-12 font-medium z-10">Tekan "Mulai Kamera" lalu "Ambil Foto"</p>
+
+          <div class="w-full max-w-sm space-y-7 z-10">
+            <div class="text-left group">
+              <div class="flex justify-between text-sm font-bold mb-2.5">
+                <span class="text-emerald-600 flex items-center gap-2"> <i class="fa-solid fa-check-circle"></i> Tingkat Keaslian </span>
+                <span id="labelAsli" class="text-emerald-600 text-lg bg-emerald-50 px-2 rounded-md">0%</span>
+              </div>
+              <div class="h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                <div id="barAsli" class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500 ease-out relative" style="width: 0%">
+                  <div class="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-left group">
+              <div class="flex justify-between text-sm font-bold mb-2.5">
+                <span class="text-rose-600 flex items-center gap-2"> <i class="fa-solid fa-triangle-exclamation"></i> Potensi Palsu </span>
+                <span id="labelPalsu" class="text-rose-600 text-lg bg-rose-50 px-2 rounded-md">0%</span>
+              </div>
+              <div class="h-4 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                <div id="barPalsu" class="h-full bg-gradient-to-r from-rose-400 to-rose-500 transition-all duration-500 ease-out" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="loadingIndicator" class="mt-10 hidden flex flex-col items-center gap-2 z-10">
+            <i class="fa-solid fa-spinner fa-spin text-blue-500 text-2xl"></i>
+            <p class="text-sm text-slate-500 font-medium">Menganalisis foto...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== FOOTER COPYRIGHT ===== -->
+    <footer class="max-w-6xl w-full mx-auto px-6 py-4 text-center text-slate-500 text-sm border-t border-slate-200/60">
+      <p>&copy; 2026 Skripsi <span class="font-semibold text-slate-700">Jonatan Rajif</span>. All rights reserved.</p>
+    </footer>
+
+    <script>
+      // Inisialisasi Elemen DOM
+      const videoElement = document.createElement("video")
+      videoElement.setAttribute("playsinline", "")
+      videoElement.setAttribute("autoplay", "")
+      videoElement.setAttribute("muted", "")
+
+      const startCamBtn = document.getElementById("startCamBtn")
+      const snapPhotoBtn = document.getElementById("snapPhotoBtn")
+      const uploadBtn = document.getElementById("uploadBtn")
+      const fileInput = document.getElementById("fileInput")
+      const cameraSelect = document.getElementById("cameraSelect")
+
+      const displayArea = document.getElementById("displayArea")
+      const placeholderText = document.getElementById("placeholderText")
+      const placeholderIcon = document.getElementById("placeholderIcon")
+
+      const loadingIndicator = document.getElementById("loadingIndicator")
+      const serverStatusBadge = document.getElementById("serverStatus")
+      const serverStatusDot = document.getElementById("serverStatusDot")
+      const statusIcon = document.getElementById("statusIcon")
+      const subTeks = document.getElementById("subTeks")
+
+      let isStreaming = false
+      let stream = null
+
+      // --- FUNGSI MENDAPATKAN DAFTAR KAMERA ---
+      async function getConnectedCameras() {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices()
+          const videoDevices = devices.filter((device) => device.kind === "videoinput")
+
+          cameraSelect.innerHTML = ""
+
+          if (videoDevices.length === 0) {
+            cameraSelect.innerHTML = '<option value="">Kamera tidak ditemukan</option>'
+            return
+          }
+
+          videoDevices.forEach((device, index) => {
+            const option = document.createElement("option")
+            option.value = device.deviceId
+            option.text = device.label || `Kamera ${index + 1}`
+            cameraSelect.appendChild(option)
+          })
+        } catch (error) {
+          console.error("Gagal mendeteksi kamera:", error)
+          cameraSelect.innerHTML = '<option value="">Gagal mendeteksi kamera</option>'
+        }
+      }
+
+      getConnectedCameras()
+
+      // --- FUNGSI CEK STATUS SERVER ---
+      async function checkServerStatus() {
+        try {
+          const response = await fetch("/", {method: "HEAD", cache: "no-store"})
+          if (response.ok) {
+            serverStatusBadge.textContent = "Server Online"
+            serverStatusDot.className = "w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]"
+          } else {
+            throw new Error("Server response not OK")
+          }
+        } catch (error) {
+          serverStatusBadge.textContent = "Server Offline"
+          serverStatusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"
+        }
+      }
+
+      checkServerStatus()
+      setInterval(checkServerStatus, 5000)
+
+      // --- FUNGSI MENGHENTIKAN KAMERA ---
+      function stopCamera(isAfterSnap = false) {
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop())
+        }
+        isStreaming = false
+
+        startCamBtn.innerHTML = '<i class="fa-solid fa-video"></i><span>Mulai Kamera</span>'
+        startCamBtn.className =
+          "flex-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 min-w-[140px]"
+
+        snapPhotoBtn.classList.add("hidden")
+        loadingIndicator.classList.add("hidden")
+
+        if (!isAfterSnap) {
+          displayArea.innerHTML = ""
+          if (placeholderIcon) displayArea.appendChild(placeholderIcon)
+          displayArea.appendChild(placeholderText)
+          placeholderText.textContent = "Kamera dihentikan"
+        }
+      }
+
+      // --- EVENT MULAI KAMERA ---
+      startCamBtn.addEventListener("click", async () => {
+        if (!isStreaming) {
+          try {
+            const selectedCameraId = cameraSelect.value
+            const videoConstraints = selectedCameraId ? {deviceId: {exact: selectedCameraId}} : {facingMode: "environment"}
+
+            stream = await navigator.mediaDevices.getUserMedia({video: videoConstraints})
+            videoElement.srcObject = stream
+            videoElement.className = "w-full h-full object-cover bg-black"
+
+            displayArea.innerHTML = ""
+            displayArea.appendChild(videoElement)
+
+            isStreaming = true
+            subTeks.textContent = "Arahkan kamera dengan jelas, lalu tekan Ambil Foto."
+
+            startCamBtn.innerHTML = '<i class="fa-solid fa-video-slash"></i><span>Hentikan Kamera</span>'
+            startCamBtn.className =
+              "flex-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 min-w-[140px]"
+
+            snapPhotoBtn.classList.remove("hidden")
+
+            if (cameraSelect.options[0].text.startsWith("Kamera 1")) {
+              getConnectedCameras()
+            }
+          } catch (err) {
+            alert("Gagal mengakses kamera. Pastikan browser memiliki izin akses kamera.")
+            console.error(err)
+          }
+        } else {
+          stopCamera(false)
+        }
+      })
+
+      // Jika user mengganti kamera via dropdown
+      cameraSelect.addEventListener("change", () => {
+        if (isStreaming) {
+          stopCamera(false)
+          startCamBtn.click()
+        }
+      })
+
+      // --- EVENT AMBIL FOTO MANUAL ---
+      snapPhotoBtn.addEventListener("click", () => {
+        if (!isStreaming) return
+
+        loadingIndicator.classList.remove("hidden")
+
+        const canvas = document.createElement("canvas")
+        canvas.width = videoElement.videoWidth
+        canvas.height = videoElement.videoHeight
+        canvas.getContext("2d").drawImage(videoElement, 0, 0)
+
+        const imageData = canvas.toDataURL("image/jpeg", 0.8)
+
+        // Matikan kamera dan bekukan gambar hasil jepretan
+        stopCamera(true)
+        displayArea.innerHTML = `<img src="${imageData}" class="w-full h-full object-contain bg-slate-900 rounded-xl" alt="Foto Diambil">`
+
+        sendToBackend(imageData)
+      })
+
+      // --- EVENT UPLOAD GAMBAR ---
+      uploadBtn.addEventListener("click", () => fileInput.click())
+
+      fileInput.addEventListener("change", (event) => {
+        const file = event.target.files[0]
+        if (file) {
+          if (isStreaming) stopCamera(false)
+
+          const reader = new FileReader()
+          reader.onload = function (e) {
+            const imageData = e.target.result
+            displayArea.innerHTML = `<img src="${imageData}" class="w-full h-full object-contain bg-slate-900 rounded-xl" alt="Gambar Upload">`
+            loadingIndicator.classList.remove("hidden")
+            sendToBackend(imageData)
+          }
+          reader.readAsDataURL(file)
+        }
+      })
+
+      // --- FUNGSI KIRIM KE FLASK ---
+      function sendToBackend(imageData) {
+        fetch("/detect", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({image: imageData}),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              const asli = data.asli
+              const palsu = data.palsu
+
+              document.getElementById("labelAsli").textContent = `${asli}%`
+              document.getElementById("labelPalsu").textContent = `${palsu}%`
+              document.getElementById("barAsli").style.width = `${asli}%`
+              document.getElementById("barPalsu").style.width = `${palsu}%`
+
+              const statusTeks = document.getElementById("statusTeks")
+
+              if (data.keaslian === "ASLI") {
+                statusIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500 drop-shadow-md"></i>'
+                statusTeks.textContent = "UANG ASLI"
+                statusTeks.className = "text-5xl font-black text-emerald-600 mb-3 tracking-tight transition-colors z-10"
+                subTeks.textContent = "Model mendeteksi pola uang asli dengan tingkat keyakinan tinggi."
+              } else if (data.keaslian === "PALSU") {
+                statusIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500 drop-shadow-md"></i>'
+                statusTeks.textContent = "UANG PALSU"
+                statusTeks.className = "text-5xl font-black text-rose-600 mb-3 tracking-tight transition-colors z-10"
+                subTeks.textContent = "Peringatan: Pola tidak memenuhi standar keaslian atau terdeteksi objek lain."
+              } else {
+                statusIcon.innerHTML = '<i class="fa-solid fa-shield-halved text-slate-300"></i>'
+                statusTeks.textContent = "TIDAK DIKENALI"
+                statusTeks.className = "text-5xl font-black text-slate-800 mb-3 tracking-tight transition-colors z-10"
+                subTeks.textContent = "Tidak dapat mengidentifikasi uang. Silakan foto ulang."
+              }
+            }
+            loadingIndicator.classList.add("hidden")
+          })
+          .catch((error) => {
+            console.error("Koneksi gagal:", error)
+            serverStatusBadge.textContent = "Server Offline"
+            serverStatusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"
+            loadingIndicator.classList.add("hidden")
+          })
+      }
+    </script>
+  </body>
+</html>
